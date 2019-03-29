@@ -1,0 +1,28 @@
+/**
+ * Document: MaxCompiler Tutorial (maxcompiler-tutorial)
+ * Chapter: 8      Example: 1      Name: Simple offset
+ * MaxFile name: SimpleOffset
+ * Summary:
+ *     Manager for kernel that applies an offset to a stream.
+ */
+package simpleoffset;
+
+import com.maxeler.maxcompiler.v2.build.EngineParameters;
+import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;
+import com.maxeler.maxcompiler.v2.managers.standard.Manager;
+import com.maxeler.maxcompiler.v2.managers.standard.Manager.IOType;
+
+class SimpleOffsetManager {
+	public static void main(String[] args) {
+	    int threshold = 50;
+	    int row_width = 4;
+	    int input_size = 16;
+		EngineParameters params = new EngineParameters(args);
+		Manager manager = new Manager(params);
+		Kernel kernel = new SimpleOffsetKernel(manager.makeKernelParameters(), threshold, row_width, input_size);
+		manager.setKernel(kernel);
+		manager.setIO(IOType.ALL_CPU);
+		manager.createSLiCinterface();
+		manager.build();
+	}
+}

@@ -1,0 +1,90 @@
+/**
+* Document: Homogeniety Edge Detection kernel on greyscale pixels
+* Written by William Huibregtse
+* Based on Maxeler SimpleOffset template on accelerator simulator
+ */
+
+package simpleoffset;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelParameters;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEVar;
+import com.maxeler.maxcompiler.v2.kernelcompiler.stdlib.KernelMath;
+
+class SimpleOffsetKernel extends Kernel {
+
+	SimpleOffsetKernel(KernelParameters parameters, int threshold, int row_width, int input_size) {
+		super(parameters);
+		
+		DFEVar count = control.count.simpleCounter(32);
+		DFEVar zero = constant.var(dfeUInt(8), 0);
+
+		// Input
+		DFEVar pixelsIn = io.input("pixelsIn", dfeUInt(8));
+		
+		// Edge conditions
+		DFEVar row_pos = KernelMath.modulo(count, row_width);
+		DFEVar is_leftcol = row_pos.eq(0);
+		DFEVar is_rightcol = row_pos.eq(row_width - 1);
+		
+		DFEVar is_toprow = count < row_width;
+		DFEVar is_bottomrow = (input_size - count) <= row_width;
+
+		// Offset differences
+		DFEVar topleft = stream.offset(pixelsIn, -(row_width + 1));
+		DFEVar tl = pixelsIn > topleft ? pixelsIn - topleft : topleft - pixelsIn;
+		DFEVar tl_diff = is_toprow | is_leftcol ? zero : tl;
+
+		DFEVar topmiddle = stream.offset(pixelsIn, -(row_width));
+		DFEVar tm = pixelsIn > topmiddle ? pixelsIn - topmiddle : topmiddle - pixelsIn;
+		DFEVar tm_diff = is_toprow ? zero : tm;
+
+		DFEVar topright = stream.offset(pixelsIn, -(row_width + 1));
+		DFEVar tr = pixelsIn > topright ? pixelsIn - topright : topright - pixelsIn;
+		DFEVar tr_diff = is_toprow | is_rightcol ? zero : tr;
+		
+		
+		DFEVar middleleft = stream.offset(pixelsIn, -1);
+		DFEVar ml = pixelsIn > middleleft ? pixelsIn - middleleft : middleleft - pixelsIn;
+		DFEVar ml_diff = is_leftcol ? zero : ml;
+
+		DFEVar middleright = stream.offset(pixelsIn, 1);
+		DFEVar mr = pixelsIn > middleright ? pixelsIn - middleright : middleright - pixelsIn;
+		DFEVar mr_diff = is_rightcol ? zero : mr;
+		
+		
+		DFEVar bottomleft = stream.offset(pixelsIn, row_width - 1);
+		DFEVar bl = pixelsIn > bottomleft ? pixelsIn - bottomleft : bottomleft - pixelsIn;
+		DFEVar bl_diff = is_bottomrow | is_leftcol ? zero : bl;
+
+		DFEVar bottommiddle = stream.offset(pixelsIn, row_width);
+		DFEVar bm = pixelsIn > bottommiddle ? pixelsIn - bottommiddle : bottommiddle - pixelsIn;
+		DFEVar bm_diff = is_bottomrow ? zero : bm;
+
+		DFEVar bottomright = stream.offset(pixelsIn, row_width + 1);
+		DFEVar br = pixelsIn > bottomright ? pixelsIn - bottomright : bottomright - pixelsIn;
+		DFEVar br_diff = is_bottomrow | is_rightcol ? zero : br;
+		
+		
+		
+		// Find max difference
+		DFEVar max1 = tl_diff > tm_diff ? tl_diff : tm_diff;
+		DFEVar max2 = tr_diff > mr_diff ? tr_diff : mr_diff;
+		DFEVar max3 = br_diff > bm_diff ? br_diff : bm_diff;
+		DFEVar max4 = bl_diff > ml_diff ? bl_diff : ml_diff;
+		
+		DFEVar max5 = max1 > max2 ? max1 : max2;
+		DFEVar max6 = max3 > max4 ? max3 : max4;
+		
+		DFEVar max7 = max5 > max6 ? max5 : max6;
+		
+		
+		// output greyscale pixel based on threshold.
+		DFEVar pixelsOut = max7 > threshold ? max7 : 0;
+		
+		// Output
+		io.output("pixelsOut", pixelsOut, dfeUInt(8));
+	}
+
+}
+
