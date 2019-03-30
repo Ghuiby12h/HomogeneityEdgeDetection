@@ -13,19 +13,17 @@
 int check(int n, uint8_t *dataOut, uint8_t *expected, int row_width)
 {
 	int status = 0;
-
     // Print all elements block
     printf("Output Matrix:\n");
-	for (int i = 0; i < n; i++) // First and last data point are undefined!
+	for (int i = 0; i < n; i++)
 	{
 		printf("%d, ", dataOut[i]);
 		if (i % row_width == row_width - 1){
 		    printf(" \n");
 		}
 	}
-	
 	printf("Expected Matrix:\n");
-	for (int i = 0; i < n; i++) // First and last data point are undefined!
+	for (int i = 0; i < n; i++)
 	{
 		printf("%d, ", expected[i]);
 		if (i % row_width == row_width - 1){
